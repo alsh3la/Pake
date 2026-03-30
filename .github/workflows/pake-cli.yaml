@@ -10,11 +10,11 @@ on:
       platform:
         description: "Platform"
         required: true
-        default: "macos-latest"
+        default: "macos-15-intel"  # Intel (x86_64) macOS runner (Sonoma/Sequoia)
         type: choice
         options:
           - "windows-latest"
-          - "macos-latest"
+          - "macos-15-intel"
           - "ubuntu-24.04"
       url:
         description: "Website URL"
@@ -43,15 +43,15 @@ on:
         required: false
         type: boolean
         default: false
-      multi_arch:
-        description: "Universal binary (macOS only)"
-        required: false
-        type: boolean
-        default: false
       targets:
-        description: "Package formats (comma-separated: deb,appimage,rpm)"
+        description: "macOS target architecture (leave as 'intel' for old Intel Macs)"
         required: false
-        default: "deb"
+        default: "intel"
+        type: choice
+        options:
+          - "intel"
+          - "apple"
+          - "universal"
 
 jobs:
   build:
@@ -120,10 +120,12 @@ jobs:
             ARGS+=("--hide-title-bar")
           fi
 
-          if [ "${{ inputs.multi_arch }}" == "true" ]; then
-            ARGS+=("--multi-arch")
+          # Pass the explicit macOS target (intel/apple/universal)
+          if [ -n "${{ inputs.targets }}" ] && [ "${{ runner.os }}" == "macOS" ]; then
+            ARGS+=("--targets" "${{ inputs.targets }}")
           fi
 
+          # For Linux, use the existing Linux 'targets' semantics if needed
           if [ -n "${{ inputs.targets }}" ] && [ "${{ runner.os }}" == "Linux" ]; then
             ARGS+=("--targets" "${{ inputs.targets }}")
           fi
